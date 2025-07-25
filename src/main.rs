@@ -1,10 +1,7 @@
 mod models;
-use crate::models::linear_regression::LinearRegression;
+use crate::models::linear_regression::{LinearRegression};
 
 fn main() {
-    let iterations = 10000; // Number of iterations for training
-    let learning_rate = 0.0125; // Learning rate for gradient descent
-
     let train_data: Vec<(f64, f64)> = vec![
         (0.0, 4.0),
         (1.0, 7.0),
@@ -19,21 +16,10 @@ fn main() {
         (10.0, 34.0),
     ];
 
-    let train_data_len = train_data.len();
-    let mut w = 1.0; // Weight
-    let mut b = 1.0; // Bias
-    
-    for _ in 0..iterations {
-
-        w -= learning_rate * train_data.iter().fold(0.0, |acc, &(x, y)| {
-            acc + 2.0 * x * ((w * x + b) - y)
-        }) / train_data_len as f64;
-
-        b -= learning_rate * train_data.iter().fold(0.0, |acc, &(x, y)| {
-            acc + 2.0 * ((w * x + b) - y)
-        }) / train_data_len as f64;
-    }
-
-    println!("Final weight: {}", w);
-    println!("Final bias: {}", b);
+    let mut linear_regression = LinearRegression::new();
+    linear_regression.evaluate(5.0);
+    println!("Initial evaluation at x=5: {}", linear_regression.evaluate(5.0));
+    linear_regression.train(train_data, 100000, 0.01);
+    linear_regression.evaluate(5.0);
+    println!("Evaluation after training at x=5: {}", linear_regression.evaluate(5.));
 }
