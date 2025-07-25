@@ -1,5 +1,6 @@
 mod models;
-use crate::models::linear_regression::{LinearRegression};
+mod utils;
+use crate::models::linear_regression::LinearRegression;
 
 fn main() {
     let train_data: Vec<(f64, f64)> = vec![
@@ -18,8 +19,6 @@ fn main() {
 
     let mut linear_regression = LinearRegression::new();
     linear_regression.evaluate(5.0);
-    println!("Initial evaluation at x=5: {}", linear_regression.evaluate(5.0));
-    linear_regression.train(train_data, 100000, 0.01);
+    linear_regression.train(train_data, 1000, 0.01);
     linear_regression.evaluate(5.0);
-    println!("Evaluation after training at x=5: {}", linear_regression.evaluate(5.));
 }
