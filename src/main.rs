@@ -17,9 +17,12 @@ fn main() {
     ];
 
     let mut linear_regression = LinearRegression::new(2);
-    linear_regression.train(train_data, 1000000, 1e-4);
+    linear_regression.train(train_data, 10000000, 1e-4, Some(5));
     println!("Error: {}", linear_regression.test_error(&test_data));
-    println!("Accuracy: {}%", linear_regression.test_accuracy(&test_data, 0.01));
-    linear_regression.summary();
+    println!(
+        "Accuracy: {}%",
+        linear_regression.test_accuracy(&test_data, 0.01)
+    );
     linear_regression.print_params();
+    linear_regression.summary();
 }

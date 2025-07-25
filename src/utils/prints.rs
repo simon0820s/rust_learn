@@ -12,5 +12,17 @@ pub fn print_train_progress_bar(epochs: usize) -> ProgressBar {
     bar
 }
 pub fn print_train_results(duration: usize, error: f64) {
-    println!("Train completed in {}, final error: {}", format!("{}ms", duration).green(), format!("{:.4}", error).red());
+    println!(
+        "Train completed in {}, final error: {}",
+        format!("{}ms", duration).green(),
+        format!("{:.4}", error).red()
+    );
+}
+
+pub fn print_early_stopping(epoch: usize, error: f64) {
+    println!(
+        "Early stopping at epoch {}, with error: {}",
+        epoch.to_string().yellow(),
+        format!("{:.4}", error).red()
+    );
 }
