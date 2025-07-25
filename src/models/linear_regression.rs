@@ -25,19 +25,30 @@ impl LinearRegression {
         for _ in 0..epochs {
             bar.inc(1);
             self.w -= learning_rate
-                * train_data.iter().fold(0.0, |acc, &(x, y)| {
-                    acc + 2.0 * x * ((self.w * x + self.b) - y)
-                })
+                * train_data
+                    .iter()
+                    .fold(0.0, |acc, &(x, y)| acc + x * ((self.w * x + self.b) - y))
                 / train_data_len as f64;
 
             self.b -= learning_rate
                 * train_data
                     .iter()
-                    .fold(0.0, |acc, &(x, y)| acc + 2.0 * ((self.w * x + self.b) - y))
+                    .fold(0.0, |acc, &(x, y)| acc + ((self.w * x + self.b) - y))
                 / train_data_len as f64;
         }
+
         bar.finish();
-        print_train_results(time.elapsed().as_millis() as usize);
+
+        let mean_squared_error: f64 = train_data
+            .iter()
+            .map(|&(x, y)| {
+                let prediction = self.evaluate(x);
+                (prediction - y).powi(2)
+            })
+            .sum::<f64>()
+            / train_data_len as f64;
+            
+        print_train_results(time.elapsed().as_millis() as usize, mean_squared_error);
     }
 
     pub fn summary(&self) {
