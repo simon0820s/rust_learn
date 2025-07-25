@@ -1,6 +1,9 @@
+mod models;
+use crate::models::linear_regression::LinearRegression;
+
 fn main() {
-    let iterations: i32 = 10000; // Number of iterations for training
-    let learning_rate: f64 = 0.0125; // Learning rate for gradient descent
+    let iterations = 10000; // Number of iterations for training
+    let learning_rate = 0.0125; // Learning rate for gradient descent
 
     let train_data: Vec<(f64, f64)> = vec![
         (0.0, 4.0),
