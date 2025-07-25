@@ -20,5 +20,5 @@ fn main() {
     let mut linear_regression = LinearRegression::new();
     linear_regression.evaluate(5.0);
     linear_regression.train(train_data, 1000, 0.01);
-    linear_regression.evaluate(5.0);
+    linear_regression.summary();
 }

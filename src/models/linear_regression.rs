@@ -1,6 +1,5 @@
-use std::thread::sleep;
-use std::time::Duration;
-use crate::utils::prints::print_train_progress_bar;
+use crate::utils::prints::{print_train_progress_bar, print_train_results};
+use std::time::Instant;
 
 pub struct LinearRegression {
     pub w: f64,
@@ -18,12 +17,12 @@ impl LinearRegression {
     }
 
     pub fn train(&mut self, train_data: Vec<(f64, f64)>, epochs: usize, learning_rate: f64) {
+        let bar = print_train_progress_bar(epochs);
+        let time = Instant::now();
+
         let train_data_len = train_data.len();
 
-        let bar = print_train_progress_bar(epochs);
-
         for _ in 0..epochs {
-            sleep(Duration::from_millis(1)); // Simulate some processing time
             bar.inc(1);
             self.w -= learning_rate
                 * train_data.iter().fold(0.0, |acc, &(x, y)| {
@@ -37,6 +36,21 @@ impl LinearRegression {
                     .fold(0.0, |acc, &(x, y)| acc + 2.0 * ((self.w * x + self.b) - y))
                 / train_data_len as f64;
         }
-        bar.finish_with_message("Entrenamiento completado ✓");
+
+        bar.finish();
+        print_train_results(time.elapsed().as_millis() as usize);
+    }
+
+    pub fn summary(&self) {
+        println!("╔═════════════════════════════════════════════╗");
+        println!("║ {:<20} │ {:<20} ║", "Component", "Value");
+        println!("╟─────────────────────────────────────────────╢");
+        println!("║ {:<20} │ {:<20} ║", "Model type", "LinearRegression");
+        println!("║ {:<20} │ {:<20} ║", "Input dimension", "1");
+        println!("║ {:<20} │ {:<20} ║", "Output dimension", "1");
+        println!("║ {:<20} │ {:<20} ║", "Trainable parameters", "2");
+        println!("║ {:<20} │ {:.4}{:<14} ║", "w", self.w, " ");
+        println!("║ {:<20} │ {:.4}{:<14} ║", "b", self.b, " ");
+        println!("╚═════════════════════════════════════════════╝");
     }
 }
