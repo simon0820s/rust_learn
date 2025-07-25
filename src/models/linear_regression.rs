@@ -1,6 +1,5 @@
 use crate::utils::prints::{print_train_progress_bar, print_train_results};
 use std::time::Instant;
-
 pub struct LinearRegression {
     w: Vec<f64>,
     b: f64,
@@ -28,6 +27,24 @@ impl LinearRegression {
             acc += x[i] * self.w[i];
         }
         acc + self.b
+    }
+
+    pub fn test_error(&self, test_data: &Vec<(Vec<f64>, f64)>) -> f64 {
+        let mut me = 0.0;
+        for (x, y) in test_data {
+            let prediction = self.evaluate(x);
+            me += (prediction - y).abs();
+        }
+        me / test_data.len() as f64
+    }
+    pub fn test_accuracy(&self, test_data: &Vec<(Vec<f64>, f64)>, treshold: f64) -> f64 {
+        let mut accuracy = 0.0;
+        for (x, y) in test_data {
+            if (self.evaluate(x) - y).abs() < treshold {
+                accuracy += 1.0;
+            }
+        }
+        (accuracy / test_data.len() as f64) * 100.0
     }
 
     pub fn train(&mut self, train_data: Vec<(Vec<f64>, f64)>, epochs: usize, learning_rate: f64) {
@@ -81,5 +98,10 @@ impl LinearRegression {
             self.w.len() + 1
         );
         println!("╚═════════════════════════════════════════════╝");
+    }
+
+    pub fn print_params(&self) {
+        println!("Weights: {:?}", self.w);
+        println!("Bias: {}", self.b);
     }
 }
