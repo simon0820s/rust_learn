@@ -1,3 +1,4 @@
+use colored::*;
 use indicatif::{ProgressBar, ProgressStyle};
 
 pub fn print_train_progress_bar(epochs: usize) -> ProgressBar {
@@ -11,5 +12,5 @@ pub fn print_train_progress_bar(epochs: usize) -> ProgressBar {
     bar
 }
 pub fn print_train_results(duration: usize) {
-    println!("Train completed in {duration}ms");
+    println!("✅ Train completed in {}.", format!("{}ms", duration).green());
 }

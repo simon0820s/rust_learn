@@ -36,7 +36,6 @@ impl LinearRegression {
                     .fold(0.0, |acc, &(x, y)| acc + 2.0 * ((self.w * x + self.b) - y))
                 / train_data_len as f64;
         }
-
         bar.finish();
         print_train_results(time.elapsed().as_millis() as usize);
     }
