@@ -32,7 +32,7 @@ impl LinearRegression {
 
     pub fn train(
         &mut self,
-        train_data: Vec<(Vec<f64>, f64)>,
+        train_data: &Vec<(Vec<f64>, f64)>,
         epochs: usize,
         learning_rate: f64,
         patience: Option<usize>,
@@ -53,7 +53,7 @@ impl LinearRegression {
             let mut grad_w = vec![0.0; self.w.len()];
             let mut grad_b = 0.0;
 
-            for (x, y) in &train_data {
+            for (x, y) in train_data {
                 let y_pred = self.evaluate(x);
                 let error = y_pred - y;
                 for i in 0..self.w.len() {
@@ -89,7 +89,7 @@ impl LinearRegression {
 
         let mut mean_squared_error = 0.0;
 
-        for (x, y) in &train_data {
+        for (x, y) in train_data {
             let prediction = self.evaluate(x);
             mean_squared_error += (prediction - y).powi(2);
         }
