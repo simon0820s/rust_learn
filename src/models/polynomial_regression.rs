@@ -23,7 +23,7 @@ impl PolynomialRegression {
 
     pub fn train(
         &mut self,
-        train_data: Vec<(f64, f64)>,
+        train_data: &Vec<(f64, f64)>,
         epochs: usize,
         learning_rate: f64,
         patience: Option<usize>,
@@ -75,7 +75,7 @@ impl PolynomialRegression {
 
         let mut mean_squared_error = 0.0;
 
-        for (x, y) in &train_data {
+        for (x, y) in train_data {
             let prediction = self.evaluate(x);
             mean_squared_error += (prediction - y).powi(2);
         }
@@ -92,15 +92,15 @@ impl PolynomialRegression {
         }
         me / test_data.len() as f64
     }
-    // pub fn test_accuracy(&self, test_data: &Vec<(Vec<f64>, f64)>, treshold: f64) -> f64 {
-    //     let mut accuracy = 0.0;
-    //     for (x, y) in test_data {
-    //         if (self.evaluate(x) - y).abs() < treshold {
-    //             accuracy += 1.0;
-    //         }
-    //     }
-    //     (accuracy / test_data.len() as f64) * 100.0
-    // }
+    pub fn test_accuracy(&self, test_data: &Vec<(f64, f64)>, treshold: f64) -> f64 {
+        let mut accuracy = 0.0;
+        for (x, y) in test_data {
+            if (self.evaluate(x) - y).abs() < treshold {
+                accuracy += 1.0;
+            }
+        }
+        (accuracy / test_data.len() as f64) * 100.0
+    }
 
     pub fn summary(&self) {
         println!("╔═════════════════════════════════════════════╗");
