@@ -75,7 +75,7 @@ impl LinearRegression {
                 } else {
                     epochs_without_improvement += 1;
                     if epochs_without_improvement >= patience {
-                        print_early_stopping(epoch, current_error);
+                        print_early_stopping(epoch, &format!("Error: {:.8} did not improve at {} epochs", current_error, epochs_without_improvement));
                         early_stopping = true;
                         break;
                     }

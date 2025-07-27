@@ -1,6 +1,7 @@
 use crate::utils::functions::get_multivariable_polynomial_exponent_combination;
 use crate::utils::prints::{print_early_stopping, print_train_progress_bar};
 use rand::distributions::{Distribution, Uniform};
+use std::time::Instant;
 
 pub struct PolynomialRegression {
     w: Vec<f64>,
@@ -35,7 +36,13 @@ impl PolynomialRegression {
         acc
     }
 
-    pub fn train(&mut self, train_data: &Vec<(Vec<f64>, f64)>, epochs: usize, learning_rate: f64) {
+    pub fn train(
+        &mut self,
+        train_data: &Vec<(Vec<f64>, f64)>,
+        epochs: usize,
+        learning_rate: f64,
+        patience: Option<usize>,
+    ) {
         assert!(!train_data.is_empty(), "train_data is empty");
         assert_eq!(
             train_data[0].0.len(),
@@ -44,6 +51,12 @@ impl PolynomialRegression {
         );
 
         let bar = print_train_progress_bar(epochs);
+        let time = Instant::now();
+
+        // Early stopping
+        let mut best_error = f64::MAX;
+        let mut epochs_without_improvement = 0;
+        let mut early_stopping = false;
 
         for epoch in 0..epochs {
             bar.inc(1);
@@ -62,15 +75,37 @@ impl PolynomialRegression {
             for i in 0..self.w.len() {
                 self.w[i] -= learning_rate * grad_w[i] / train_data.len() as f64;
             }
+            if let Some(patience) = patience {
+                let current_error = self.test_error(&train_data);
+                if current_error < best_error {
+                    best_error = current_error;
+                    epochs_without_improvement = 0;
+                    println!("Best error:{:.8}", best_error);
+                } else {
+                    epochs_without_improvement += 1;
+                    if epochs_without_improvement >= patience {
+                        print_early_stopping(
+                            epoch,
+                            &format!(
+                                "Error: {:.8} did not improve at {} epochs",
+                                current_error, epochs_without_improvement
+                            ),
+                        );
+                        early_stopping = true;
+                        break;
+                    }
+                }
+            }
+
             if self.w.iter().any(|&w| w.is_nan()) {
-                println!(
-                    "Training stopped at epoch {} due to NaN weights.",
-                    epoch + 1,
-                );
+                print_early_stopping(epoch, "NaN Weights detected");
+                early_stopping = true;
                 break;
             }
         }
-        bar.finish();
+        if !early_stopping {
+            bar.finish();
+        }
     }
 
     pub fn test_error(&self, test_data: &Vec<(Vec<f64>, f64)>) -> f64 {
