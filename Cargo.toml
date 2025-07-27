@@ -10,3 +10,4 @@ path = "src/lib.rs"
 [dependencies]
 indicatif = "0.17"
 colored = "2.0"
+rand = "0.8.5"

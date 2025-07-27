@@ -1,5 +1,6 @@
 use crate::utils::functions::get_multivariable_polynomial_exponent_combination;
 use crate::utils::prints::{print_early_stopping, print_train_progress_bar};
+use rand::distributions::{Distribution, Uniform};
 
 pub struct PolynomialRegression {
     w: Vec<f64>,
@@ -7,15 +8,17 @@ pub struct PolynomialRegression {
 }
 
 impl PolynomialRegression {
-    // Create new instance with default parameters.
     pub fn new(variables: usize, degree: usize) -> Self {
         let multivariable_polynomial_exponent_combinations =
             get_multivariable_polynomial_exponent_combination(variables, degree);
+        let num_weights = multivariable_polynomial_exponent_combinations.len();
+
+        let mut rng = rand::thread_rng();
+        let uniform = Uniform::from(-1.0..=1.0);
+        let w: Vec<f64> = (0..num_weights).map(|_| uniform.sample(&mut rng)).collect();
 
         PolynomialRegression {
-            w: (0..(multivariable_polynomial_exponent_combinations.len()))
-                .map(|x| x as f64 * 0.0)
-                .collect(),
+            w,
             degrees_combinations: multivariable_polynomial_exponent_combinations,
         }
     }
@@ -33,10 +36,16 @@ impl PolynomialRegression {
     }
 
     pub fn train(&mut self, train_data: &Vec<(Vec<f64>, f64)>, epochs: usize, learning_rate: f64) {
-        // Initialize progress bar and timer
+        assert!(!train_data.is_empty(), "train_data is empty");
+        assert_eq!(
+            train_data[0].0.len(),
+            self.degrees_combinations[0].len(),
+            "Input dimensions do not match"
+        );
+
         let bar = print_train_progress_bar(epochs);
 
-        for _ in 0..epochs {
+        for epoch in 0..epochs {
             bar.inc(1);
             let mut grad_w = vec![0.0; self.w.len()];
 
@@ -53,8 +62,14 @@ impl PolynomialRegression {
             for i in 0..self.w.len() {
                 self.w[i] -= learning_rate * grad_w[i] / train_data.len() as f64;
             }
+            if self.w.iter().any(|&w| w.is_nan()) {
+                println!(
+                    "Training stopped at epoch {} due to NaN weights.",
+                    epoch + 1,
+                );
+                break;
+            }
         }
-
         bar.finish();
     }
 
