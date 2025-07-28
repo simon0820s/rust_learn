@@ -1,5 +1,4 @@
 use crate::utils::prints::{print_early_stopping, print_train_progress_bar, print_train_results};
-use std::io::{self, Write};
 use std::time::Instant;
 
 pub struct LinearRegression {
@@ -24,11 +23,9 @@ impl LinearRegression {
                 x.len()
             );
         }
-        let mut acc = 0.0;
-        for i in 0..x.len() {
-            acc += x[i] * self.w[i];
-        }
-        acc + self.b
+        x.iter()
+            .zip(&self.w)
+            .fold(self.b, |acc, (xi, wi)| acc + xi * wi)
     }
 
     pub fn train(
@@ -118,21 +115,18 @@ impl LinearRegression {
     }
 
     pub fn test_error(&self, test_data: &Vec<(Vec<f64>, f64)>) -> f64 {
-        let mut me = 0.0;
-        for (x, y) in test_data {
-            let prediction = self.evaluate(x);
-            me += (prediction - y).abs();
-        }
-        me / test_data.len() as f64
+        test_data
+            .iter()
+            .map(|(x, y)| (self.evaluate(x) - y).abs())
+            .sum()
     }
     pub fn test_accuracy(&self, test_data: &Vec<(Vec<f64>, f64)>, treshold: f64) -> f64 {
-        let mut accuracy = 0.0;
-        for (x, y) in test_data {
-            if (self.evaluate(x) - y).abs() < treshold {
-                accuracy += 1.0;
-            }
-        }
-        (accuracy / test_data.len() as f64) * 100.0
+        test_data
+            .iter()
+            .map(|(x, y)| (self.evaluate(x) - y).abs() < treshold)
+            .count() as f64
+            / test_data.len() as f64
+            * 100.0
     }
 
     pub fn summary(&self) {
