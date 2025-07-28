@@ -52,24 +52,24 @@ impl LinearRegression {
             let mut total_error = 0.0;
             let mut correct_evaluations = 0;
 
-            for (x, y) in train_data {
-                let y_pred = self.evaluate(x);
-                let error = y_pred - y;
+            train_data.iter().for_each(|(x, y)| {
+                let error = self.evaluate(x) - y;
                 total_error += error.abs();
                 if let Some(threshold) = accuracy_threshold {
                     if error.abs() < threshold {
                         correct_evaluations += 1;
                     }
                 }
-                for i in 0..self.w.len() {
-                    grad_w[i] += error * x[i];
+                for (grad_w, x) in grad_w.iter_mut().zip(x) {
+                    *grad_w += error * x;
                 }
                 grad_b += error;
+            });
+
+            for (w, grad) in self.w.iter_mut().zip(&grad_w) {
+                *w -= learning_rate * grad / train_data.len() as f64;
             }
 
-            for i in 0..self.w.len() {
-                self.w[i] -= learning_rate * grad_w[i] / train_data.len() as f64;
-            }
             self.b -= learning_rate * grad_b / train_data.len() as f64;
 
             if let Some(patience) = patience {
@@ -136,11 +136,7 @@ impl LinearRegression {
         println!("║ {:<20} │ {:<20} ║", "Model type", "LinearRegression");
         println!("║ {:<20} │ {:<20} ║", "Input dimension", "1");
         println!("║ {:<20} │ {:<20} ║", "Output dimension", "1");
-        println!(
-            "║ {:<20} │ {:<20} ║",
-            "Trainable parameters",
-            self.w.len() + 1
-        );
+        println!("║ {:<20} │ {:<20} ║", "Trainable params", self.w.len() + 1);
         println!("╚═════════════════════════════════════════════╝");
     }
 
