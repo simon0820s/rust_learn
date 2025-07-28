@@ -1,4 +1,4 @@
-use crate::utils::prints::{print_early_stopping, print_train_progress_bar, print_train_results};
+use crate::utils::prints::{print_train_progress_bar, print_train_results};
 use std::time::Instant;
 
 pub struct PolynomialRegression {
@@ -39,7 +39,7 @@ impl PolynomialRegression {
 
         let train_data_len = train_data.len();
 
-        for epoch in 0..epochs {
+        for _ in 0..epochs {
             bar.inc(1);
             let mut grad_w = vec![0.0; self.w.len()];
 
@@ -61,7 +61,6 @@ impl PolynomialRegression {
                 } else {
                     epochs_without_improvement += 1;
                     if epochs_without_improvement >= patience {
-                        print_early_stopping(epoch, current_error);
                         early_stopping = true;
                         break;
                     }

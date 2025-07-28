@@ -1,4 +1,5 @@
 use crate::utils::prints::{print_early_stopping, print_train_progress_bar, print_train_results};
+use std::io::{self, Write};
 use std::time::Instant;
 
 pub struct LinearRegression {
@@ -36,6 +37,7 @@ impl LinearRegression {
         epochs: usize,
         learning_rate: f64,
         patience: Option<usize>,
+        accuracy_threshold: Option<f64>,
     ) {
         // Initialize progress bar and timer
         let bar = print_train_progress_bar(epochs);
@@ -46,16 +48,22 @@ impl LinearRegression {
         let mut epochs_without_improvement = 0;
         let mut early_stopping = false;
 
-        let train_data_len = train_data.len();
-
         for epoch in 0..epochs {
             bar.inc(1);
             let mut grad_w = vec![0.0; self.w.len()];
             let mut grad_b = 0.0;
+            let mut total_error = 0.0;
+            let mut correct_evaluations = 0;
 
             for (x, y) in train_data {
                 let y_pred = self.evaluate(x);
                 let error = y_pred - y;
+                total_error += error.abs();
+                if let Some(threshold) = accuracy_threshold {
+                    if error.abs() < threshold {
+                        correct_evaluations += 1;
+                    }
+                }
                 for i in 0..self.w.len() {
                     grad_w[i] += error * x[i];
                 }
@@ -75,11 +83,28 @@ impl LinearRegression {
                 } else {
                     epochs_without_improvement += 1;
                     if epochs_without_improvement >= patience {
-                        print_early_stopping(epoch, current_error);
+                        print_early_stopping(
+                            epoch,
+                            &format!(
+                                "error ({:.6}) does not improve at {epochs_without_improvement} epochs",
+                                current_error
+                            ),
+                        );
                         early_stopping = true;
                         break;
                     }
                 }
+            }
+            let avg_error = total_error / train_data.len() as f64;
+
+            if let Some(_) = accuracy_threshold {
+                let accuracy = (correct_evaluations as f64 / train_data.len() as f64) * 100.0;
+                bar.set_message(format!(
+                    "Error: {:.6} | Accuracy: {:.2}%",
+                    avg_error, accuracy
+                ));
+            } else {
+                bar.set_message(format!("Error: {:.6}", avg_error));
             }
         }
 
@@ -87,15 +112,9 @@ impl LinearRegression {
             bar.finish();
         }
 
-        let mut mean_squared_error = 0.0;
+        let final_error = self.test_error(train_data);
 
-        for (x, y) in train_data {
-            let prediction = self.evaluate(x);
-            mean_squared_error += (prediction - y).powi(2);
-        }
-        mean_squared_error /= train_data_len as f64;
-
-        print_train_results(time.elapsed().as_millis() as usize, mean_squared_error);
+        print_train_results(time.elapsed().as_millis() as usize, final_error);
     }
 
     pub fn test_error(&self, test_data: &Vec<(Vec<f64>, f64)>) -> f64 {
