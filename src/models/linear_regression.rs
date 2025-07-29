@@ -1,3 +1,4 @@
+use crate::utils::functions::normalize_data;
 use crate::utils::prints::{print_early_stopping, print_train_progress_bar, print_train_results};
 use std::time::Instant;
 
@@ -36,14 +37,18 @@ impl LinearRegression {
         patience: Option<usize>,
         accuracy_threshold: Option<f64>,
     ) {
-        // Initialize progress bar and timer
         let bar = print_train_progress_bar(epochs);
         let time = Instant::now();
 
-        // Early stopping
         let mut best_error = f64::MAX;
         let mut epochs_without_improvement = 0;
         let mut early_stopping = false;
+
+        // Normaliza los datos y guarda estadísticas
+        let (normalized_train_data, x_means, x_stds, y_mean, y_std) =
+            normalize_data(train_data);
+        println!("Train data: {:?}", train_data);
+        println!("Normalized train data: {:?}", normalized_train_data);
 
         for epoch in 0..epochs {
             bar.inc(1);
@@ -51,10 +56,10 @@ impl LinearRegression {
             let mut grad_b = 0.0;
             let mut correct_evaluations = 0;
 
-            let batches = self.get_batches(train_data, batch_size);
+            let batches = self.get_batches(&normalized_train_data, batch_size);
 
-            batches.iter().for_each(|batche| {
-                batche.iter().for_each(|(x, y)| {
+            batches.iter().for_each(|batch| {
+                batch.iter().for_each(|(x, y)| {
                     let error = self.evaluate(x) - y;
                     if let Some(threshold) = accuracy_threshold {
                         if error.abs() < threshold {
@@ -66,6 +71,7 @@ impl LinearRegression {
                     }
                     grad_b += error;
                 });
+
                 for (w, grad) in self.w.iter_mut().zip(&grad_w) {
                     *w -= learning_rate * grad / train_data.len() as f64;
                 }
@@ -74,7 +80,7 @@ impl LinearRegression {
             });
 
             if let Some(patience) = patience {
-                let current_error = self.test_error(&train_data);
+                let current_error = self.test_error(&normalized_train_data);
                 if current_error < best_error {
                     best_error = current_error;
                     epochs_without_improvement = 0;
@@ -93,7 +99,8 @@ impl LinearRegression {
                     }
                 }
             }
-            let avg_error = self.test_error(train_data);
+
+            let avg_error = self.test_error(&normalized_train_data);
 
             if let Some(_) = accuracy_threshold {
                 let accuracy = (correct_evaluations as f64 / train_data.len() as f64) * 100.0;
@@ -110,9 +117,21 @@ impl LinearRegression {
             bar.finish();
         }
 
-        let final_error = self.test_error(train_data);
+        let final_error = self.test_error(&normalized_train_data);
 
         print_train_results(time.elapsed().as_millis() as usize, final_error);
+
+        // 💥 Desnormaliza los pesos y el bias
+        let mut new_w = vec![0.0; self.w.len()];
+        let mut new_b = self.b * y_std + y_mean;
+
+        for i in 0..self.w.len() {
+            new_w[i] = self.w[i] * y_std / x_stds[i];
+            new_b -= self.w[i] * x_means[i] * y_std / x_stds[i];
+        }
+
+        self.w = new_w;
+        self.b = new_b;
     }
 
     pub fn test_error(&self, test_data: &Vec<(Vec<f64>, f64)>) -> f64 {
