@@ -1,5 +1,4 @@
 use crate::utils::prints::{print_early_stopping, print_train_progress_bar, print_train_results};
-use std::io::{self, Write};
 use std::time::Instant;
 
 pub struct LinearRegression {
@@ -8,7 +7,6 @@ pub struct LinearRegression {
 }
 
 impl LinearRegression {
-    // Create new instance with default parameters.
     pub fn new(input_lenght: usize) -> Self {
         LinearRegression {
             w: (0..input_lenght).map(|x| x as f64 * 0.0).collect(),
@@ -24,11 +22,9 @@ impl LinearRegression {
                 x.len()
             );
         }
-        let mut acc = 0.0;
-        for i in 0..x.len() {
-            acc += x[i] * self.w[i];
-        }
-        acc + self.b
+        x.iter()
+            .zip(&self.w)
+            .fold(self.b, |acc, (xi, wi)| acc + xi * wi)
     }
 
     pub fn train(
@@ -36,6 +32,7 @@ impl LinearRegression {
         train_data: &Vec<(Vec<f64>, f64)>,
         epochs: usize,
         learning_rate: f64,
+        batch_size: Option<usize>,
         patience: Option<usize>,
         accuracy_threshold: Option<f64>,
     ) {
@@ -52,28 +49,29 @@ impl LinearRegression {
             bar.inc(1);
             let mut grad_w = vec![0.0; self.w.len()];
             let mut grad_b = 0.0;
-            let mut total_error = 0.0;
             let mut correct_evaluations = 0;
 
-            for (x, y) in train_data {
-                let y_pred = self.evaluate(x);
-                let error = y_pred - y;
-                total_error += error.abs();
-                if let Some(threshold) = accuracy_threshold {
-                    if error.abs() < threshold {
-                        correct_evaluations += 1;
-                    }
-                }
-                for i in 0..self.w.len() {
-                    grad_w[i] += error * x[i];
-                }
-                grad_b += error;
-            }
+            let batches = self.get_batches(train_data, batch_size);
 
-            for i in 0..self.w.len() {
-                self.w[i] -= learning_rate * grad_w[i] / train_data.len() as f64;
-            }
-            self.b -= learning_rate * grad_b / train_data.len() as f64;
+            batches.iter().for_each(|batche| {
+                batche.iter().for_each(|(x, y)| {
+                    let error = self.evaluate(x) - y;
+                    if let Some(threshold) = accuracy_threshold {
+                        if error.abs() < threshold {
+                            correct_evaluations += 1;
+                        }
+                    }
+                    for (grad_w, x) in grad_w.iter_mut().zip(x) {
+                        *grad_w += error * x;
+                    }
+                    grad_b += error;
+                });
+                for (w, grad) in self.w.iter_mut().zip(&grad_w) {
+                    *w -= learning_rate * grad / train_data.len() as f64;
+                }
+
+                self.b -= learning_rate * grad_b / train_data.len() as f64;
+            });
 
             if let Some(patience) = patience {
                 let current_error = self.test_error(&train_data);
@@ -95,7 +93,7 @@ impl LinearRegression {
                     }
                 }
             }
-            let avg_error = total_error / train_data.len() as f64;
+            let avg_error = self.test_error(train_data);
 
             if let Some(_) = accuracy_threshold {
                 let accuracy = (correct_evaluations as f64 / train_data.len() as f64) * 100.0;
@@ -118,21 +116,19 @@ impl LinearRegression {
     }
 
     pub fn test_error(&self, test_data: &Vec<(Vec<f64>, f64)>) -> f64 {
-        let mut me = 0.0;
-        for (x, y) in test_data {
-            let prediction = self.evaluate(x);
-            me += (prediction - y).abs();
-        }
-        me / test_data.len() as f64
+        test_data
+            .iter()
+            .map(|(x, y)| (self.evaluate(x) - y).abs())
+            .sum::<f64>()
+            / test_data.len() as f64
     }
     pub fn test_accuracy(&self, test_data: &Vec<(Vec<f64>, f64)>, treshold: f64) -> f64 {
-        let mut accuracy = 0.0;
-        for (x, y) in test_data {
-            if (self.evaluate(x) - y).abs() < treshold {
-                accuracy += 1.0;
-            }
-        }
-        (accuracy / test_data.len() as f64) * 100.0
+        test_data
+            .iter()
+            .map(|(x, y)| (self.evaluate(x) - y).abs() < treshold)
+            .count() as f64
+            / test_data.len() as f64
+            * 100.0
     }
 
     pub fn summary(&self) {
@@ -142,16 +138,27 @@ impl LinearRegression {
         println!("║ {:<20} │ {:<20} ║", "Model type", "LinearRegression");
         println!("║ {:<20} │ {:<20} ║", "Input dimension", "1");
         println!("║ {:<20} │ {:<20} ║", "Output dimension", "1");
-        println!(
-            "║ {:<20} │ {:<20} ║",
-            "Trainable parameters",
-            self.w.len() + 1
-        );
+        println!("║ {:<20} │ {:<20} ║", "Trainable params", self.w.len() + 1);
         println!("╚═════════════════════════════════════════════╝");
     }
 
     pub fn print_params(&self) {
         println!("Weights: {:?}", self.w);
         println!("Bias: {}", self.b);
+    }
+
+    fn get_batches(
+        &self,
+        train_data: &Vec<(Vec<f64>, f64)>,
+        batch_size: Option<usize>,
+    ) -> Vec<Vec<(Vec<f64>, f64)>> {
+        if let Some(size) = batch_size {
+            train_data
+                .chunks(size)
+                .map(|chunk| chunk.to_vec())
+                .collect()
+        } else {
+            vec![train_data.clone()]
+        }
     }
 }
