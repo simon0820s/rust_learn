@@ -121,7 +121,6 @@ impl LinearRegression {
 
         print_train_results(time.elapsed().as_millis() as usize, final_error);
 
-        // 💥 Desnormaliza los pesos y el bias
         let mut new_w = vec![0.0; self.w.len()];
         let mut new_b = self.b * y_std + y_mean;
 
